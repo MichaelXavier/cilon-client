@@ -1,90 +1,15 @@
-require 'bundler'
-Bundler.require(:default)
-require 'uri'
+#!/usr/bin/env ruby
 require 'lib/cilon-client'
-
-@uri = URI.parse(ARGV.pop)
-
-def main_menu
-  loop do
-    begin
-      print "R - Refresh, B - Build, S - Setup: "
-      c = ask('') {|q| q.character = true}
-      case c.upcase
-        when 'R' then refresh
-        when 'B' then build
-        when 'S' then setup
-        else exit(0)
-      end
-    rescue => e
-      warn "Error occurred (#{e.class}): #{e.message}"
-    end
-  end
-end
-
-def clear
-  print "\e[2J\e[f"
-end
-
-def refresh
-  clear
-  pull
-  output = table do |t|
-    t.headings = ['#', 'Project', 'Last Built', 'Status']
-    @current.each_with_index do |data, i| 
-      t << [i, data['long_name'], data['last_built'], color_status(data['status'])]
-    end
-  end
-  puts output
-end
-
-def prompt_project_num
-  num = ask("Which number?", Integer) do |q| 
-    q.in = (0...@current.length)
-    q.character = true
-  end
-end
-
-def build
-  num = prompt_project_num
-  RestClient.get((@uri + "/#{@current[num]['name']}/build").to_s)
-  puts "Requested build of #{@current[num]['long_name']}"
-end
-
-def setup
-  num = prompt_project_num
-  RestClient.get((@uri + "/#{@current[num]['name']}/setup").to_s)
-  puts "Requested setup of #{@current[num]['long_name']}"
-end
-
-def request_build(client_name)
-  #puts "1"
-  #RestClient.get((@uri + "/#{@current[num]['name']/build}"))#.to_s)
-  #puts "2"
-end
-
-def color_status(status)
-  case status
-    when "new"       then status.blue
-    when "building"  then status.yellow
-    when "succeeded" then status.green
-    when "failed"    then status.red
-  end
-end
-
-def pull
-  @current = Yajl::Parser.parse(RestClient.get(@uri.to_s)).collect do |(name, h)|
-    h.merge('name' => name)
-  end
-end
 
 program :name, 'CIlon Client'
 program :version, '0.0.1'
 program :description, 'Keep an eye on your CIlon server.'
 
-command :monitor do
-  refresh
-  main_menu
+command :monitor do |c|
+  c.syntax = "cilon-client url"
+  c.action do |args, options|
+    Cilon::Client.new(args.shift).run
+  end
 end
 
 default_command :monitor
