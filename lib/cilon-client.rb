@@ -25,15 +25,16 @@ module Cilon
     def main_menu
       loop do
         begin
-          c = ask('[R]efresh, [B]uild, [S]etup, [Q]uit: ') do |q| 
+          c = ask('[R]efresh, [B]uild, [S]etup, [C]onfig Reload, [Q]uit: ') do |q| 
             q.character = true
             q.echo = true
-            q.in = %w[R B S Q r b s q]
+            q.in = %w[R B S C Q r b s c q]
           end
           case c.upcase
             when 'R' then refresh
             when 'B' then build
             when 'S' then setup
+            when 'C' then reload
             when 'Q' then quit
           end
         rescue => e
@@ -56,19 +57,17 @@ module Cilon
     def build
       num = prompt_project_num
       RestClient.get((@uri + "/#{@current[num]['name']}/build").to_s)
-      puts "Requested build of #{@current[num]['long_name']}"
     end
 
     def setup
       num = prompt_project_num
       RestClient.get((@uri + "/#{@current[num]['name']}/setup").to_s)
       refresh
-      puts "Requested setup of #{@current[num]['long_name']}"
     end
 
     def refresh
       clear
-      puts "Reloading..."
+      puts "Refreshing..."
       pull
       clear
       output = table do |t|
@@ -79,6 +78,11 @@ module Cilon
       end
       puts output
       main_menu
+    end
+
+    def reload
+      RestClient.post(@uri.to_s, {})
+      refresh
     end
 
     def pull
