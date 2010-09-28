@@ -25,16 +25,17 @@ module Cilon
     def main_menu
       loop do
         begin
-          c = ask('[R]efresh, [B]uild, [S]etup, [C]onfig Reload, [Q]uit: ') do |q| 
+          c = ask('[R]efresh, [B]uild, [S]etup, [C]onfig Reload, [O]utput, [Q]uit: ') do |q| 
             q.character = true
             q.echo = true
-            q.in = %w[R B S C Q r b s c q]
+            q.in = %w[R B S C O Q r b s c o q]
           end
           case c.upcase
             when 'R' then refresh
             when 'B' then build
             when 'S' then setup
             when 'C' then reload
+            when 'O' then read_output
             when 'Q' then quit
           end
         rescue => e
@@ -78,6 +79,14 @@ module Cilon
       end
       puts output
       main_menu
+    end
+
+    def read_output
+      num = prompt_project_num
+      IO.popen('less', 'w') do |io|
+        io.write("OUTPUT:\n#{@current[num]['output']}\nERROR:\n#{@current[num]['error']}")
+      end
+      refresh
     end
 
     def reload
